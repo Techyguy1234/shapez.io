@@ -25,12 +25,10 @@ COPY translations ./translations
 COPY src/js ./src/js
 COPY res_raw ./res_raw
 COPY .git ./.git
-COPY electron ./electron
-
 WORKDIR /shapez.io/gulp
-# Build the standalone-steam variant: sets G_IS_STANDALONE=true and G_IS_STEAM_DEMO=false,
-# which makes isLimitedVersion() return false so the full game is available without Steam SSO.
-RUN yarn gulp build.standalone-steam
+# NODE_OPTIONS required for Node 18 + OpenSSL 3 compatibility with the bundled webpack 4
+ENV NODE_OPTIONS=--openssl-legacy-provider
+RUN yarn gulp build.web-shapezio
 
 # ---- Server stage ----
 FROM nginx:alpine
