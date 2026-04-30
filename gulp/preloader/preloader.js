@@ -151,9 +151,6 @@
                 script.src = window.URL.createObjectURL(blob);
                 script.type = "text/javascript";
                 script.charset = "utf-8";
-                if (bundleIntegrity) {
-                    script.setAttribute("integrity", bundleIntegrity);
-                }
                 document.head.appendChild(script);
             }
         };
