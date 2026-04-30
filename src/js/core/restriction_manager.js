@@ -3,7 +3,6 @@ import { Application } from "../application";
 /* typehints:end */
 import { ExplainedResult } from "./explained_result";
 import { ReadWriteProxy } from "./read_write_proxy";
-import { WEB_STEAM_SSO_AUTHENTICATED } from "./steam_sso";
 
 export class RestrictionManager extends ReadWriteProxy {
     /**
@@ -60,20 +59,11 @@ export class RestrictionManager extends ReadWriteProxy {
             return true;
         }
 
-        if (G_IS_STANDALONE) {
-            // Standalone is never limited
-            return false;
-        }
-
-        if (WEB_STEAM_SSO_AUTHENTICATED) {
-            return false;
-        }
-
         if (G_IS_DEV) {
             return typeof window !== "undefined" && window.location.search.indexOf("demo") >= 0;
         }
 
-        return true;
+        return false;
     }
 
     /**
