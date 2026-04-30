@@ -23,6 +23,7 @@ COPY version ./version
 COPY sync-translations.js ./
 COPY translations ./translations
 COPY src/js ./src/js
+RUN cp src/js/core/config.local.template.js src/js/core/config.local.js
 COPY res_raw ./res_raw
 COPY .git ./.git
 COPY electron ./electron
