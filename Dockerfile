@@ -36,5 +36,6 @@ RUN yarn gulp build.web-shapezio
 FROM nginx:alpine
 
 COPY --from=builder /shapez.io/build /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
