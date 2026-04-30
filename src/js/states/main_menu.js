@@ -145,7 +145,9 @@ export class MainMenuState extends GameState {
                     <div class="buttons"></div>
                     <div class="savegamesMount"></div>
                     ${
-                        hasSteamBridge && (G_IS_STANDALONE || !WEB_STEAM_SSO_AUTHENTICATED)
+                        hasSteamBridge &&
+                        this.app.restrictionMgr.isLimitedVersion() &&
+                        !WEB_STEAM_SSO_AUTHENTICATED
                             ? `<div class="steamSso">
                                 <span class="description">${
                                     G_IS_STANDALONE
