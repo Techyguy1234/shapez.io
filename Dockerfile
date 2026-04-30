@@ -25,6 +25,7 @@ COPY translations ./translations
 COPY src/js ./src/js
 COPY res_raw ./res_raw
 COPY .git ./.git
+COPY electron ./electron
 WORKDIR /shapez.io/gulp
 # NODE_OPTIONS required for Node 18 + OpenSSL 3 compatibility with the bundled webpack 4
 ENV NODE_OPTIONS=--openssl-legacy-provider
