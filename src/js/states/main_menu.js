@@ -18,6 +18,7 @@ import {
     startFileChoose,
     waitNextFrame,
 } from "../core/utils";
+import { showExportSavegameStringDialog, showImportSavegameStringDialog } from "../core/savegame_string_dialogs";
 import { HUDModalDialogs } from "../game/hud/parts/modal_dialogs";
 import { MODS } from "../mods/modloader";
 import { PlatformWrapperImplBrowser } from "../platform/browser/wrapper";
@@ -367,46 +368,30 @@ export class MainMenuState extends GameState {
 
         this.app.gameAnalytics.note("startimport");
 
-        // Create a 'fake' file-input to accept savegames
-        startFileChoose(".bin").then(file => {
-            if (file) {
-                const closeLoader = this.dialogs.showLoadingDialog();
-                waitNextFrame().then(() => {
+        // Check if we're running in a web browser (not Electron)
+        if (this.app.platformWrapper instanceof PlatformWrapperImplBrowser) {
+            // Web build: show copy-paste dialog instead of file picker
+            showImportSavegameStringDialog(this.dialogs)
+                .then(pastedString => {
+                    this.processImportedSavegame(pastedString);
+                })
+                .catch(err => {
+                    // User cancelled or error occurred
+                    if (err.message !== "Import cancelled by user" && err.message !== "No savegame string provided") {
+                        this.dialogs.showWarning(
+                            T.dialogs.importSavegameError.title,
+                            T.dialogs.importSavegameError.text + "<br><br>" + err
+                        );
+                    }
+                });
+        } else {
+            // Electron build: use traditional file picker
+            startFileChoose(".bin").then(file => {
+                if (file) {
                     const reader = new FileReader();
                     reader.addEventListener("load", event => {
                         const contents = event.target.result;
-                        let realContent;
-
-                        try {
-                            realContent = ReadWriteProxy.deserializeObject(contents);
-                        } catch (err) {
-                            closeLoader();
-                            this.dialogs.showWarning(
-                                T.dialogs.importSavegameError.title,
-                                T.dialogs.importSavegameError.text + "<br><br>" + err
-                            );
-                            return;
-                        }
-
-                        this.app.savegameMgr.importSavegame(realContent).then(
-                            () => {
-                                closeLoader();
-                                this.dialogs.showWarning(
-                                    T.dialogs.importSavegameSuccess.title,
-                                    T.dialogs.importSavegameSuccess.text
-                                );
-
-                                this.renderMainMenu();
-                                this.renderSavegames();
-                            },
-                            err => {
-                                closeLoader();
-                                this.dialogs.showWarning(
-                                    T.dialogs.importSavegameError.title,
-                                    T.dialogs.importSavegameError.text + ":<br><br>" + err
-                                );
-                            }
-                        );
+                        this.processImportedSavegame(contents);
                     });
                     reader.addEventListener("error", error => {
                         this.dialogs.showWarning(
@@ -415,8 +400,50 @@ export class MainMenuState extends GameState {
                         );
                     });
                     reader.readAsText(file, "utf-8");
-                });
+                }
+            });
+        }
+    }
+
+    /**
+     * Process an imported savegame string
+     * @param {string} contents The serialized savegame data
+     */
+    processImportedSavegame(contents) {
+        const closeLoader = this.dialogs.showLoadingDialog();
+        waitNextFrame().then(() => {
+            let realContent;
+
+            try {
+                realContent = ReadWriteProxy.deserializeObject(contents);
+            } catch (err) {
+                closeLoader();
+                this.dialogs.showWarning(
+                    T.dialogs.importSavegameError.title,
+                    T.dialogs.importSavegameError.text + "<br><br>" + err
+                );
+                return;
             }
+
+            this.app.savegameMgr.importSavegame(realContent).then(
+                () => {
+                    closeLoader();
+                    this.dialogs.showWarning(
+                        T.dialogs.importSavegameSuccess.title,
+                        T.dialogs.importSavegameSuccess.text
+                    );
+
+                    this.renderMainMenu();
+                    this.renderSavegames();
+                },
+                err => {
+                    closeLoader();
+                    this.dialogs.showWarning(
+                        T.dialogs.importSavegameError.title,
+                        T.dialogs.importSavegameError.text + ":<br><br>" + err
+                    );
+                }
+            );
         });
     }
 
@@ -882,8 +909,18 @@ export class MainMenuState extends GameState {
         const savegame = this.app.savegameMgr.getSavegameById(game.internalId);
         savegame.readAsync().then(() => {
             const data = ReadWriteProxy.serializeObject(savegame.currentData);
-            const filename = (game.name || "unnamed") + ".bin";
-            generateFileDownload(filename, data);
+            
+            // Check if we're running in a web browser (not Electron)
+            if (this.app.platformWrapper instanceof PlatformWrapperImplBrowser) {
+                // Web build: show copy-paste dialog instead of file download
+                showExportSavegameStringDialog(this.dialogs, data, game.name || "unnamed").then(() => {
+                    // Dialog closed
+                });
+            } else {
+                // Electron build: use traditional file download
+                const filename = (game.name || "unnamed") + ".bin";
+                generateFileDownload(filename, data);
+            }
         });
     }
 

@@ -244,6 +244,8 @@ dialogs:
         retry: Retry
         continue: Continue
         playOffline: Play Offline
+        import: Import
+        done: Done
 
     importSavegameError:
         title: Import Error
